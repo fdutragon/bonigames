@@ -45,10 +45,10 @@ function clampToIsland(x: number, y: number): Vec2 {
 export function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [player, setPlayer] = useState<Player & { name: string }>({
-    x: ICX,
-    y: ICY,
-    tx: ICX,
-    ty: ICY,
+    x: CW / 2,
+    y: CH / 2,
+    tx: CW / 2,
+    ty: CH / 2,
     color: PLAYER_COLOR,
     alive: true,
     size: PLAYER_SIZE,
@@ -60,17 +60,20 @@ export function GameCanvas() {
   const [players, setPlayers] = useState<Record<string, RemotePlayer>>({});
   const [socket, setSocket] = useState<Socket | null>(null);
   const [joined, setJoined] = useState(false);
-  const [waiting, setWaiting] = useState(true);
   const [inputName, setInputName] = useState('');
   const [dimensions, setDimensions] = useState({ width: typeof window !== 'undefined' ? window.innerWidth : CW, height: typeof window !== 'undefined' ? window.innerHeight : CH });
 
-  // Fullscreen resize
+  // Fullscreen resize e bloqueio de scroll
   useEffect(() => {
     const handleResize = () => {
       setDimensions({ width: window.innerWidth, height: window.innerHeight });
     };
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      document.body.style.overflow = '';
+    };
   }, []);
 
   // Conexão socket.io
@@ -81,9 +84,6 @@ export function GameCanvas() {
     s.emit('join', { name: player.name });
     s.on('players', (remotePlayers: Record<string, RemotePlayer>) => {
       setPlayers(remotePlayers);
-      // Só conta jogadores com nome preenchido
-      const readyPlayers = Object.values(remotePlayers).filter(p => p.name && p.name.trim() !== '');
-      setWaiting(readyPlayers.length !== 2);
     });
     return () => { s.disconnect(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -91,7 +91,7 @@ export function GameCanvas() {
 
   // Movimento com mouse
   useEffect(() => {
-    if (!socket || !joined || waiting) return;
+    if (!socket || !joined) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const handleClick = (e: MouseEvent) => {
@@ -112,11 +112,11 @@ export function GameCanvas() {
       canvas.removeEventListener('mousedown', handleClick);
       canvas.removeEventListener('contextmenu', (e) => e.preventDefault());
     };
-  }, [player.x, player.y, socket, joined, waiting]);
+  }, [player.x, player.y, socket, joined]);
 
   // Loop principal
   useEffect(() => {
-    if (!joined || waiting) return;
+    if (!joined) return;
     let anim: number;
     const step = () => {
       setPlayer((p) => {
@@ -142,7 +142,7 @@ export function GameCanvas() {
     };
     anim = requestAnimationFrame(step);
     return () => cancelAnimationFrame(anim);
-  }, [socket, joined, waiting]);
+  }, [socket, joined]);
 
   // Renderização
   useEffect(() => {
@@ -151,12 +151,8 @@ export function GameCanvas() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, dimensions.width, dimensions.height);
-    ctx.fillStyle = '#222';
+    ctx.fillStyle = '#2e7d32'; // fundo verde
     ctx.fillRect(0, 0, dimensions.width, dimensions.height);
-    ctx.beginPath();
-    ctx.arc(dimensions.width / 2, dimensions.height / 2, Math.min(dimensions.width, dimensions.height) / 2 - 50, 0, 2 * Math.PI);
-    ctx.fillStyle = '#2e7d32';
-    ctx.fill();
     // Outros players
     Object.values(players).forEach((rp) => {
       if (!rp.alive) return;
@@ -200,20 +196,11 @@ export function GameCanvas() {
       ctx.font = '16px sans-serif';
       ctx.fillText(player.name, player.x - 20, player.y - 40);
     }
-    ctx.fillStyle = '#fff';
-    ctx.font = '32px sans-serif';
-    ctx.fillText('Jogo BR na Ilha (React/Next.js)', 40, 60);
-    ctx.font = '18px sans-serif';
-    if (!joined) {
-      ctx.fillText('Digite seu nome e entre na sala', 40, 90);
-    } else if (waiting) {
-      ctx.fillText('Aguardando outro jogador entrar...', 40, 90);
-    }
-  }, [player, players, dimensions, joined, waiting]);
+  }, [player, players, dimensions, joined]);
 
   if (!joined) {
     return (
-      <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-900">
+      <div className="flex flex-col items-center justify-center w-screen h-screen bg-green-700">
         <div className="bg-gray-800 p-8 rounded-lg shadow-lg flex flex-col gap-4">
           <h2 className="text-xl font-bold text-white">Entrar no Jogo</h2>
           <input
@@ -237,7 +224,7 @@ export function GameCanvas() {
     );
   }
   return (
-    <div className="w-screen h-screen flex items-center justify-center bg-gray-900">
+    <div className="w-screen h-screen flex items-center justify-center bg-green-700">
       <canvas ref={canvasRef} width={dimensions.width} height={dimensions.height} className="block w-full h-full" />
     </div>
   );
