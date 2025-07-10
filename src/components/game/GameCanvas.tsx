@@ -42,7 +42,7 @@ function clampToIsland(x: number, y: number): Vec2 {
   return { x, y };
 }
 
-export function GameCanvas({ width = CW, height = CH }: { width?: number; height?: number }) {
+export function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [player, setPlayer] = useState<Player & { name: string }>({
     x: ICX,
@@ -62,6 +62,16 @@ export function GameCanvas({ width = CW, height = CH }: { width?: number; height
   const [joined, setJoined] = useState(false);
   const [waiting, setWaiting] = useState(true);
   const [inputName, setInputName] = useState('');
+  const [dimensions, setDimensions] = useState({ width: typeof window !== 'undefined' ? window.innerWidth : CW, height: typeof window !== 'undefined' ? window.innerHeight : CH });
+
+  // Fullscreen resize
+  useEffect(() => {
+    const handleResize = () => {
+      setDimensions({ width: window.innerWidth, height: window.innerHeight });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Conexão socket.io
   useEffect(() => {
@@ -140,11 +150,11 @@ export function GameCanvas({ width = CW, height = CH }: { width?: number; height
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    ctx.clearRect(0, 0, width, height);
+    ctx.clearRect(0, 0, dimensions.width, dimensions.height);
     ctx.fillStyle = '#222';
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, dimensions.width, dimensions.height);
     ctx.beginPath();
-    ctx.arc(ICX, ICY, IR, 0, 2 * Math.PI);
+    ctx.arc(dimensions.width / 2, dimensions.height / 2, Math.min(dimensions.width, dimensions.height) / 2 - 50, 0, 2 * Math.PI);
     ctx.fillStyle = '#2e7d32';
     ctx.fill();
     // Outros players
@@ -199,11 +209,11 @@ export function GameCanvas({ width = CW, height = CH }: { width?: number; height
     } else if (waiting) {
       ctx.fillText('Aguardando outro jogador entrar...', 40, 90);
     }
-  }, [player, players, width, height, joined, waiting]);
+  }, [player, players, dimensions, joined, waiting]);
 
   if (!joined) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-900">
         <div className="bg-gray-800 p-8 rounded-lg shadow-lg flex flex-col gap-4">
           <h2 className="text-xl font-bold text-white">Sala de Espera</h2>
           <input
@@ -228,7 +238,7 @@ export function GameCanvas({ width = CW, height = CH }: { width?: number; height
   }
   if (waiting) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-900">
         <div className="bg-gray-800 p-8 rounded-lg shadow-lg flex flex-col gap-4">
           <h2 className="text-xl font-bold text-white">Aguardando outro jogador entrar...</h2>
           <div className="text-gray-300">Compartilhe o link e aguarde.</div>
@@ -237,8 +247,8 @@ export function GameCanvas({ width = CW, height = CH }: { width?: number; height
     );
   }
   return (
-    <div className="flex flex-col items-center justify-center">
-      <canvas ref={canvasRef} width={width} height={height} className="rounded-lg border border-gray-700 bg-black" />
+    <div className="w-screen h-screen flex items-center justify-center bg-gray-900">
+      <canvas ref={canvasRef} width={dimensions.width} height={dimensions.height} className="block w-full h-full" />
     </div>
   );
 }
