@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy:git": "git add . && git commit -m \"deploy: auto\" && git push"
   },
   "dependencies": {
     "next": "15.3.5",

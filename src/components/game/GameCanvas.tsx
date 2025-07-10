@@ -16,17 +16,6 @@ interface Player {
   health: number;
   maxHealth: number;
 }
-interface Bullet {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  active: boolean;
-  color: string;
-}
-interface JoinPayload {
-  name: string;
-}
 interface RemotePlayer extends Player {
   id: string;
   name: string;
@@ -40,9 +29,6 @@ const ICY = CH / 2;
 const PLAYER_SIZE = 20;
 const PLAYER_COLOR = '#fff';
 const PLAYER_SPEED = 6;
-const BULLET_SPEED = 12;
-const BULLET_RADIUS = 5;
-const BULLET_COLOR = '#ff0';
 const SOCKET_PATH = '/api/socketio';
 
 function clampToIsland(x: number, y: number): Vec2 {
@@ -71,7 +57,6 @@ export function GameCanvas({ width = CW, height = CH }: { width?: number; height
     maxHealth: 100,
     name: '',
   });
-  const [bullets, setBullets] = useState<Bullet[]>([]);
   const [players, setPlayers] = useState<Record<string, RemotePlayer>>({});
   const [socket, setSocket] = useState<Socket | null>(null);
   const [joined, setJoined] = useState(false);
@@ -141,19 +126,6 @@ export function GameCanvas({ width = CW, height = CH }: { width?: number; height
         if (socket) socket.emit('move', { x: clamped.x, y: clamped.y, angle });
         return { ...p, x: clamped.x, y: clamped.y, angle };
       });
-      setBullets((prev) =>
-        prev
-          .map((b) => {
-            if (!b.active) return b;
-            const nx = b.x + b.vx;
-            const ny = b.y + b.vy;
-            if (Math.hypot(nx - ICX, ny - ICY) > IR) {
-              return { ...b, active: false };
-            }
-            return { ...b, x: nx, y: ny };
-          })
-          .filter((b) => b.active)
-      );
       anim = requestAnimationFrame(step);
     };
     anim = requestAnimationFrame(step);

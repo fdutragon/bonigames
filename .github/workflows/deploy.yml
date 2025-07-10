@@ -1,0 +1,45 @@
+name: Deploy Next.js App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      # Exemplo: Deploy para Vercel (ajuste para seu provedor)
+      # - name: Deploy to Vercel
+      #   uses: amondnet/vercel-action@v25
+      #   with:
+      #     vercel-token: ${{ secrets.VERCEL_TOKEN }}
+      #     vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+      #     vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+      #     working-directory: .
+      #     prod: true
+
+      # Exemplo: Deploy para servidor próprio via SSH/rsync
+      # - name: Deploy via rsync
+      #   run: |
+      #     rsync -avz --delete .next/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/caminho/para/app/.next/
+      #     rsync -avz --delete public/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/caminho/para/app/public/
+      #     rsync -avz --delete package.json package-lock.json ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/caminho/para/app/
+      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'cd /caminho/para/app && pm2 restart app'
+
+      - name: Done
+        run: echo "Deploy concluído. Configure o provedor conforme seu ambiente."
