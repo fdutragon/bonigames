@@ -24,8 +24,12 @@ interface Bullet {
   active: boolean;
   color: string;
 }
+interface JoinPayload {
+  name: string;
+}
 interface RemotePlayer extends Player {
   id: string;
+  name: string;
 }
 
 const CW = 1100;
@@ -54,7 +58,7 @@ function clampToIsland(x: number, y: number): Vec2 {
 
 export function GameCanvas({ width = CW, height = CH }: { width?: number; height?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [player, setPlayer] = useState<Player>({
+  const [player, setPlayer] = useState<Player & { name: string }>({
     x: ICX,
     y: ICY,
     tx: ICX,
@@ -65,25 +69,34 @@ export function GameCanvas({ width = CW, height = CH }: { width?: number; height
     angle: 0,
     health: 100,
     maxHealth: 100,
+    name: '',
   });
   const [bullets, setBullets] = useState<Bullet[]>([]);
   const [players, setPlayers] = useState<Record<string, RemotePlayer>>({});
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [joined, setJoined] = useState(false);
+  const [waiting, setWaiting] = useState(true);
+  const [inputName, setInputName] = useState('');
 
   // Conexão socket.io
   useEffect(() => {
+    if (!joined) return;
     const s = io({ path: SOCKET_PATH });
     setSocket(s);
+    s.emit('join', { name: player.name });
     s.on('players', (remotePlayers: Record<string, RemotePlayer>) => {
       setPlayers(remotePlayers);
+      setWaiting(Object.keys(remotePlayers).length < 2);
     });
     return () => { s.disconnect(); };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [joined]);
 
   // Movimento com mouse
   useEffect(() => {
+    if (!socket || !joined || waiting) return;
     const canvas = canvasRef.current;
-    if (!canvas || !socket) return;
+    if (!canvas) return;
     const handleClick = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
@@ -94,21 +107,6 @@ export function GameCanvas({ width = CW, height = CH }: { width?: number; height
           socket.emit('move', { tx: mx, ty: my });
           return next;
         });
-      } else if (e.button === 2) {
-        setBullets((prev) => {
-          const angle = Math.atan2(my - player.y, mx - player.x);
-          return [
-            ...prev,
-            {
-              x: player.x,
-              y: player.y,
-              vx: BULLET_SPEED * Math.cos(angle),
-              vy: BULLET_SPEED * Math.sin(angle),
-              active: true,
-              color: BULLET_COLOR,
-            },
-          ];
-        });
       }
     };
     canvas.addEventListener('mousedown', handleClick);
@@ -117,10 +115,11 @@ export function GameCanvas({ width = CW, height = CH }: { width?: number; height
       canvas.removeEventListener('mousedown', handleClick);
       canvas.removeEventListener('contextmenu', (e) => e.preventDefault());
     };
-  }, [player.x, player.y, socket]);
+  }, [player.x, player.y, socket, joined, waiting]);
 
   // Loop principal
   useEffect(() => {
+    if (!joined || waiting) return;
     let anim: number;
     const step = () => {
       setPlayer((p) => {
@@ -159,7 +158,7 @@ export function GameCanvas({ width = CW, height = CH }: { width?: number; height
     };
     anim = requestAnimationFrame(step);
     return () => cancelAnimationFrame(anim);
-  }, [socket]);
+  }, [socket, joined, waiting]);
 
   // Renderização
   useEffect(() => {
@@ -192,9 +191,12 @@ export function GameCanvas({ width = CW, height = CH }: { width?: number; height
       ctx.fillRect(rp.x - 20, rp.y - 30, 40, 5);
       ctx.fillStyle = '#0f0';
       ctx.fillRect(rp.x - 20, rp.y - 30, 40 * (rp.health / rp.maxHealth), 5);
+      ctx.fillStyle = '#fff';
+      ctx.font = '16px sans-serif';
+      ctx.fillText(rp.name, rp.x - 20, rp.y - 40);
     });
     // Player local
-    if (player.alive) {
+    if (player.alive && joined) {
       ctx.save();
       ctx.translate(player.x, player.y);
       ctx.rotate(player.angle);
@@ -210,24 +212,59 @@ export function GameCanvas({ width = CW, height = CH }: { width?: number; height
       ctx.fillRect(player.x - 20, player.y - 30, 40, 5);
       ctx.fillStyle = '#0f0';
       ctx.fillRect(player.x - 20, player.y - 30, 40 * (player.health / player.maxHealth), 5);
+      ctx.fillStyle = '#fff';
+      ctx.font = '16px sans-serif';
+      ctx.fillText(player.name, player.x - 20, player.y - 40);
     }
-    bullets.forEach((b) => {
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, BULLET_RADIUS, 0, 2 * Math.PI);
-      ctx.fillStyle = b.color;
-      ctx.fill();
-    });
     ctx.fillStyle = '#fff';
     ctx.font = '32px sans-serif';
     ctx.fillText('Jogo BR na Ilha (React/Next.js)', 40, 60);
     ctx.font = '18px sans-serif';
-    ctx.fillText('Compartilhe seu IP local para jogar com seu filho!', 40, 90);
-  }, [player, players, bullets, width, height]);
+    if (!joined) {
+      ctx.fillText('Digite seu nome e entre na sala', 40, 90);
+    } else if (waiting) {
+      ctx.fillText('Aguardando outro jogador entrar...', 40, 90);
+    }
+  }, [player, players, width, height, joined, waiting]);
 
+  if (!joined) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="bg-gray-800 p-8 rounded-lg shadow-lg flex flex-col gap-4">
+          <h2 className="text-xl font-bold text-white">Sala de Espera</h2>
+          <input
+            className="p-2 rounded bg-gray-700 text-white"
+            placeholder="Seu nome"
+            value={inputName}
+            onChange={e => setInputName(e.target.value)}
+            maxLength={16}
+          />
+          <button
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() => {
+              if (inputName.trim()) {
+                setPlayer(p => ({ ...p, name: inputName.trim() }));
+                setJoined(true);
+              }
+            }}
+          >Entrar</button>
+        </div>
+      </div>
+    );
+  }
+  if (waiting) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="bg-gray-800 p-8 rounded-lg shadow-lg flex flex-col gap-4">
+          <h2 className="text-xl font-bold text-white">Aguardando outro jogador entrar...</h2>
+          <div className="text-gray-300">Compartilhe o link e aguarde.</div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col items-center justify-center">
       <canvas ref={canvasRef} width={width} height={height} className="rounded-lg border border-gray-700 bg-black" />
-      <div className="mt-4 text-gray-300">Acesse: http://SEU_IP_LOCAL:3000 em outro dispositivo na mesma rede</div>
     </div>
   );
 }
