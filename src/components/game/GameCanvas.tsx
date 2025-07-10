@@ -71,7 +71,9 @@ export function GameCanvas({ width = CW, height = CH }: { width?: number; height
     s.emit('join', { name: player.name });
     s.on('players', (remotePlayers: Record<string, RemotePlayer>) => {
       setPlayers(remotePlayers);
-      setWaiting(Object.keys(remotePlayers).length < 2);
+      // Só conta jogadores com nome preenchido
+      const readyPlayers = Object.values(remotePlayers).filter(p => p.name && p.name.trim() !== '');
+      setWaiting(readyPlayers.length !== 2);
     });
     return () => { s.disconnect(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps

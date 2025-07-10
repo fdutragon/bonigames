@@ -39,22 +39,26 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     });
     io.on('connection', (socket) => {
       const id = socket.id;
-      // Espera o evento 'join' para registrar o nome
+      // Cria player imediatamente, nome vazio
+      players[id] = {
+        id,
+        x: 550,
+        y: 500,
+        tx: 550,
+        ty: 500,
+        angle: 0,
+        color: '#' + Math.floor(Math.random() * 16777215).toString(16),
+        alive: true,
+        health: 100,
+        maxHealth: 100,
+        name: '',
+      };
+      io.emit('players', players);
       socket.on('join', (data: { name: string }) => {
-        players[id] = {
-          id,
-          x: 550,
-          y: 500,
-          tx: 550,
-          ty: 500,
-          angle: 0,
-          color: '#' + Math.floor(Math.random() * 16777215).toString(16),
-          alive: true,
-          health: 100,
-          maxHealth: 100,
-          name: data.name || '',
-        };
-        io.emit('players', players);
+        if (players[id]) {
+          players[id].name = data.name || '';
+          io.emit('players', players);
+        }
       });
       socket.on('move', (data) => {
         if (players[id]) {
