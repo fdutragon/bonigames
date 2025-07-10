@@ -15,6 +15,7 @@ interface PlayerState {
   maxHealth: number;
 }
 
+// eslint-disable-next-line prefer-const
 let players: Record<string, PlayerState> = {};
 
 export const config = {
@@ -24,7 +25,7 @@ export const config = {
 };
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  // @ts-ignore
+  // @ts-expect-error Next.js custom server type
   const server: HTTPServer & { io?: Server } = res.socket?.server;
   if (!server) {
     res.status(500).end('Server not available');
