@@ -215,7 +215,7 @@ export function GameCanvas() {
     return (
       <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-900">
         <div className="bg-gray-800 p-8 rounded-lg shadow-lg flex flex-col gap-4">
-          <h2 className="text-xl font-bold text-white">Sala de Espera</h2>
+          <h2 className="text-xl font-bold text-white">Entrar no Jogo</h2>
           <input
             className="p-2 rounded bg-gray-700 text-white"
             placeholder="Seu nome"
@@ -232,16 +232,6 @@ export function GameCanvas() {
               }
             }}
           >Entrar</button>
-        </div>
-      </div>
-    );
-  }
-  if (waiting) {
-    return (
-      <div className="flex flex-col items-center justify-center w-screen h-screen bg-gray-900">
-        <div className="bg-gray-800 p-8 rounded-lg shadow-lg flex flex-col gap-4">
-          <h2 className="text-xl font-bold text-white">Aguardando outro jogador entrar...</h2>
-          <div className="text-gray-300">Compartilhe o link e aguarde.</div>
         </div>
       </div>
     );
