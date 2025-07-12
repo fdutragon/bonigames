@@ -62,7 +62,14 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       });
       socket.on('move', (data) => {
         if (players[id]) {
-          players[id] = { ...players[id], ...data };
+          // Atualiza nome se vier no payload
+          const update: Partial<PlayerState> = { ...data };
+          if (typeof data.name === 'string' && data.name.trim() !== '') {
+            update.name = data.name;
+          } else {
+            delete update.name;
+          }
+          players[id] = { ...players[id], ...update };
           io.emit('players', players);
         }
       });
