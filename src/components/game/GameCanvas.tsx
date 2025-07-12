@@ -27,7 +27,7 @@ const IR = Math.min(CW, CH) / 2 - 50;
 const ICX = CW / 2;
 const ICY = CH / 2;
 const PLAYER_SIZE = 20;
-const PLAYER_COLOR = '#fff';
+// const PLAYER_COLOR = '#fff';
 const PLAYER_SPEED = 6;
 const SOCKET_PATH = '/api/socketio';
 
@@ -234,7 +234,7 @@ export function GameCanvas({ skinIndex = 0 }: { skinIndex: number }) {
   const [joined, setJoined] = useState(false);
   const [inputName, setInputName] = useState('');
   const [dimensions, setDimensions] = useState({ width: CW, height: CH });
-  const [skinIndexState, setSkinIndex] = useState(0);
+// const [skinIndexState, setSkinIndex] = useState(0);
   // Efeito de neve
   const SNOW_COUNT = 60;
   const [snow, setSnow] = useState<{x:number,y:number,r:number,speed:number}[]>(() =>
@@ -357,7 +357,7 @@ export function GameCanvas({ skinIndex = 0 }: { skinIndex: number }) {
     const step = () => {
       setSnow((flakes) => flakes.map(f => {
         let ny = f.y + f.speed;
-        let nx = f.x + Math.sin(ny / 18) * 1.2;
+        const nx = f.x + Math.sin(ny / 18) * 1.2;
         if (ny > CH) ny = CH;
         return { ...f, x: nx, y: ny };
       }));
@@ -518,7 +518,7 @@ export function GameCanvas({ skinIndex = 0 }: { skinIndex: number }) {
       ctx.fill();
       ctx.restore();
     }
-  }, [player, players, dimensions, joined]);
+  }, [player, players, dimensions, joined, skinIndex, snow]);
 
   // Atualiza cor e skin do player ao trocar skinIndex
   useEffect(() => {
@@ -527,7 +527,7 @@ export function GameCanvas({ skinIndex = 0 }: { skinIndex: number }) {
       color: SKINS[skinIndex].color,
       skinIndex
     }));
-  }, [skinIndex]);
+  }, [skinIndex, setPlayer]);
 
   if (!joined) {
     return (

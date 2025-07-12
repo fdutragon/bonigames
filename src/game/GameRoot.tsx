@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 import { MainScene } from "./MainScene";
 import { useJoystick } from "./ui/useJoystick";
 
@@ -74,8 +74,9 @@ export function GameRoot() {
   // Joystick para Phaser
   useEffect(() => {
     const interval = setInterval(() => {
-      if ((window as any).phaserScene && (x !== 0 || y !== 0)) {
-        (window as any).phaserScene.joystickInput = { x, y };
+      const win = window as unknown as { phaserScene?: { joystickInput?: { x: number; y: number } } };
+      if (win.phaserScene && (x !== 0 || y !== 0)) {
+        win.phaserScene.joystickInput = { x, y };
       }
     }, 16);
     

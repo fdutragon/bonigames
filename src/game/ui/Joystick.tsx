@@ -109,7 +109,7 @@ export const Joystick: FC<JoystickProps> = ({ onMove }) => {
         document.removeEventListener('mouseup', handleGlobalMouseUp);
       };
     }
-  }, [isDragging, isMobile]);
+  }, [isDragging, isMobile, handleEnd, handleMove]);
   
   return (
     <div

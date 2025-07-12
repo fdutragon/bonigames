@@ -77,7 +77,7 @@ const generateVillage = (centerX: number, centerY: number, size: number): WorldO
       x: Math.round(x / 64) * 64,
       y: Math.round(y / 64) * 64,
       type: 'house',
-      size: ['small', 'medium', 'large'][Math.floor(Math.random() * 3)] as any,
+      size: ['small', 'medium', 'large'][Math.floor(Math.random() * 3)] as 'small' | 'medium' | 'large',
       depth: y,
       isInteractive: true,
       hidingSpot: true,

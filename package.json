@@ -11,6 +11,7 @@
     "deploy:git": "git add . && git commit -m \"deploy: auto\" && git push"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.50.5",
     "next": "15.3.5",
     "phaser": "^3.90.0",
     "react": "^19.0.0",
